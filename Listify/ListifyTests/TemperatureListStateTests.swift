@@ -1,4 +1,5 @@
 import Testing
+import Foundation
 @testable import Listify
 
 /// Tests for the `TemperatureListState` enum equality, which is used to decide

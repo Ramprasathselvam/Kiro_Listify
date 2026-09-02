@@ -48,6 +48,39 @@ struct TemperatureListViewModelTests {
         #expect(viewModel.records.first?.month == "Jan")
     }
 
+    @Test("load() transitions to empty when the provider returns no records")
+    func loadProducesEmptyState() async {
+        let viewModel = TemperatureListViewModel(provider: { [] })
+        await viewModel.load()
+        #expect(viewModel.state == .empty)
+        #expect(viewModel.records.isEmpty)
+    }
+
+    @Test("load() transitions to error when the provider throws")
+    func loadProducesErrorState() async {
+        struct LoadFailure: LocalizedError {
+            var errorDescription: String? { "Could not reach the server" }
+        }
+        let viewModel = TemperatureListViewModel(provider: { throw LoadFailure() })
+        await viewModel.load()
+
+        guard case let .error(message) = viewModel.state else {
+            Issue.record("Expected .error, got \(viewModel.state)")
+            return
+        }
+        #expect(message == "Could not reach the server")
+        #expect(viewModel.records.isEmpty)
+    }
+
+    @Test("load() uses the injected provider's records")
+    func loadUsesInjectedProvider() async {
+        let injected = [TemperatureRecord(year: 2020, month: "Aug", variance: 1.02)]
+        let viewModel = TemperatureListViewModel(provider: { injected })
+        await viewModel.load()
+        #expect(viewModel.records.count == 1)
+        #expect(viewModel.records.first?.year == 2020)
+    }
+
     // MARK: - records accessor across states
 
     @Test("records accessor is empty in non-loaded states")

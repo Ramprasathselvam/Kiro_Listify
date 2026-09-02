@@ -8,12 +8,17 @@ import SwiftUI
 struct TemperatureListView: View {
     @State private var viewModel = TemperatureListViewModel()
 
+    /// Whether the screen was pushed onto a navigation stack. Drives the back
+    /// button independently of the load state so nav chrome doesn't flicker
+    /// while data loads.
+    var showsBackButton: Bool = false
+
     var body: some View {
         VStack(spacing: 0) {
             TopBar(
                 title: "Trip Stories",
-                showsBackButton: hasData,
-                isSelectEnabled: hasData
+                showsBackButton: showsBackButton,
+                isSelectEnabled: canSelect
             )
 
             content
@@ -27,7 +32,8 @@ struct TemperatureListView: View {
         }
     }
 
-    private var hasData: Bool {
+    /// "Select" is only actionable when there are records to select.
+    private var canSelect: Bool {
         if case .loaded = viewModel.state { return true }
         return false
     }
@@ -56,10 +62,13 @@ struct TemperatureListView: View {
     private func list(_ records: [TemperatureRecord]) -> some View {
         ScrollView {
             LazyVStack(spacing: Theme.Spacing.x8) {
-                ForEach(records) { record in
+                ForEach(Array(records.enumerated()), id: \.element.id) { index, record in
                     TemperatureRow(record: record)
-                    Divider()
-                        .overlay(Theme.Colors.divider)
+                    // Divider between rows only — not after the last one.
+                    if index < records.count - 1 {
+                        Divider()
+                            .overlay(Theme.Colors.divider)
+                    }
                 }
             }
             .padding(Theme.Spacing.x16)
